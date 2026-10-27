@@ -9,13 +9,19 @@ below!
 Unreleased
 ----------
 
-..
-    New features
-    ~~~~~~~~~~~~
+New features
+~~~~~~~~~~~~
+
+- Show a progress bar on interactive terminals for long-running operations:
+  :ref:`update-cmd`, :ref:`write-cmd`, :ref:`move-cmd` and the
+  :doc:`plugins/lyrics` command. Plugin authors can wrap any loop in
+  ``beets.ui.progress(iterable, desc, unit)``. :bug:`5711`
 
 Bug fixes
 ~~~~~~~~~
 
+- :doc:`plugins/lyrics`: Accept synced LRCLib lyrics that end with a blank
+  line instead of silently falling back to plain lyrics. :bug:`7070`
 - Add ``alternatives.item_updated`` to the typed event list so
   :doc:`plugins/hook` can listen to it. :bug:`7036`
 
