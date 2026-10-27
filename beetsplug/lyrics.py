@@ -283,7 +283,9 @@ class LRCLyrics:
         cls, duration: float, lyrics: str | None
     ) -> str | None:
         """Accept synced lyrics only when the final timestamp fits duration."""
-        if lyrics and (
+        # Trailing blank lines are common in LRCLib entries; ignore them so the
+        # last *timestamped* line is the one that gets checked.
+        if (lyrics := lyrics and lyrics.rstrip()) and (
             m := Lyrics.LINE_PARTS_PAT.match(lyrics.splitlines()[-1])
         ):
             ts, _ = m.groups()
@@ -358,7 +360,7 @@ class LRCLyrics:
     @staticmethod
     def _format_synced(synced: str) -> str:
         """Return synced lyrics with surrounding whitespace trimmed."""
-        return "\n".join(map(str.strip, synced.splitlines()))
+        return "\n".join(map(str.strip, synced.rstrip().splitlines()))
 
     @staticmethod
     def _synced_as_plain(synced: str) -> str:
@@ -1198,7 +1200,7 @@ class LyricsPlugin(LyricsRequestHandler, plugins.BeetsPlugin):
             # import_write config value.
             self.config.set(vars(opts))
             items = list(lib.items(args))
-            for item in items:
+            for item in ui.progress(items, "Fetching lyrics"):
                 self.add_item_lyrics(item, ui.should_write())
                 if item.lyrics and opts.print:
                     ui.print_(item.lyrics)
