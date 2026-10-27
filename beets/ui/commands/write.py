@@ -35,7 +35,7 @@ def write_items(
     if not items:
         raise UserError("No matching items to write.")
 
-    for item in items:
+    for item in ui.progress(items, "Writing"):
         # Item deleted?
         if not os.path.exists(syspath(item.path)):
             log.info("missing file: {.filepath}", item)

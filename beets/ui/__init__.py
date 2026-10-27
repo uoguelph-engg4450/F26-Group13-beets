@@ -13,6 +13,7 @@ import sqlite3
 import sys
 import textwrap
 import traceback
+from collections.abc import Sized
 from functools import cache
 from typing import TYPE_CHECKING, Any, Literal, TextIO, TypeVar, overload
 
@@ -28,7 +29,7 @@ from beets.util.deprecation import deprecate_for_maintainers
 from beets.util.diff import get_model_changes
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Sequence
+    from collections.abc import Callable, Iterable, Iterator, Sequence
     from pathlib import Path
 
     from beets.library import LibModel
@@ -442,6 +443,57 @@ def term_width() -> int:
     """Get the width (columns) of the terminal."""
     columns, _ = shutil.get_terminal_size(fallback=(0, 0))
     return columns if columns else config["ui"]["terminal_width"].get(int)
+
+
+def progress(
+    iterable: Iterable[T],
+    desc: str = "",
+    unit: str = "item",
+    total: int | None = None,
+) -> Iterator[T]:
+    """Yield the items of `iterable`, drawing a progress bar on stderr.
+
+    The bar is only drawn when stderr is an interactive terminal, so piped
+    output and tests are unaffected. It is erased while the loop body runs, so
+    anything printed or logged there appears above the bar, which is redrawn
+    afterwards. `total` defaults to ``len(iterable)`` when available.
+    """
+    stream = sys.stderr
+    if (
+        sys.platform == "win32"
+        or not getattr(stream, "isatty", lambda: False)()
+    ):
+        yield from iterable
+        return
+
+    if total is None and isinstance(iterable, Sized):
+        total = len(iterable)
+    plural = unit if total == 1 else f"{unit}s"
+
+    def draw(done: int) -> None:
+        if total:
+            filled = 20 * done // total
+            bar = f"|{'#' * filled}{'-' * (20 - filled)}|"
+            line = f"{desc} {bar} {done}/{total} {plural}"
+        else:
+            line = f"{desc} {done} {plural}"
+        stream.write(f"\r\x1b[2K{line.strip()[: term_width() - 1]}")
+        stream.flush()
+
+    def erase() -> None:
+        stream.write("\r\x1b[2K")
+        stream.flush()
+
+    done = 0
+    try:
+        draw(done)
+        for obj in iterable:
+            erase()
+            yield obj
+            done += 1
+            draw(done)
+    finally:
+        erase()
 
 
 def show_model_changes(
