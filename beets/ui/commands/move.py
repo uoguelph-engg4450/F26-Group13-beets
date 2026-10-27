@@ -121,7 +121,9 @@ def move_objects(
         else:
             selected_objs = objs
 
-        for obj in selected_objs:
+        for obj in ui.progress(
+            selected_objs, "Copying" if copy else "Moving", entity
+        ):
             log.debug("moving: {.filepath}", obj)
 
             if opts.export:

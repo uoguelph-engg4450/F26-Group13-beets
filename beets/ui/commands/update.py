@@ -75,7 +75,7 @@ def update_items(
 
         # Walk through the items and pick up their changes.
         affected_albums = set()
-        for item in items:
+        for item in ui.progress(items, "Updating"):
             # Item deleted?
             if not item.path or not os.path.exists(syspath(item.path)):
                 ui.print_(format(item))
